@@ -52,18 +52,19 @@ function initSplashScreen() {
   const splash = document.getElementById('splash-screen');
   if (!splash) return;
 
-  const savedUserId = localStorage.getItem('procom_active_user_id');
-  if (savedUserId) {
-    splash.classList.add('hidden');
-    setTimeout(() => splash.style.display = 'none', 600);
-  } else {
-    splash.style.display = 'flex';
-    splash.classList.remove('hidden');
-  }
+  // Always show the splash login screen first
+  splash.style.display = 'flex';
+  splash.classList.remove('hidden');
 
-  // Splash login button
   const loginBtn = document.getElementById('splash-login-btn');
   const loginInput = document.getElementById('splash-login-input');
+
+  // Pre-fill previously used ID if available
+  const savedUserId = localStorage.getItem('procom_active_user_id');
+  if (savedUserId && loginInput) {
+    loginInput.value = savedUserId;
+  }
+
   if (loginBtn && loginInput) {
     const doSplashLogin = async () => {
       const val = loginInput.value.trim();
@@ -78,6 +79,7 @@ function initSplashScreen() {
     loginBtn.onclick = doSplashLogin;
     loginInput.onkeydown = (e) => { if (e.key === 'Enter') doSplashLogin(); };
   }
+
 
   // Splash quick connect buttons
   document.querySelectorAll('.splash-quick-btn').forEach(btn => {
@@ -232,22 +234,8 @@ async function initApp() {
     const users = await window.API.getUsers();
     window.appState.users = users;
 
-    // Check saved user in localStorage
-    const savedUserId = localStorage.getItem('procom_active_user_id');
-    if (savedUserId) {
-      window.appState.currentUser = users.find(u => u.id === parseInt(savedUserId));
-    }
-
-    if (window.appState.currentUser) {
-      updateUserUI();
-      window.realtime.connect(window.appState.currentUser.id);
-      await loadConversations();
-      if (window.appState.conversations.length > 0) {
-        selectConversation(window.appState.conversations[0]);
-      }
-    } else {
-      showLoginSplash();
-    }
+    // User connects explicitly through splash screen first
+    showLoginSplash();
   } catch (err) {
     console.error('Failed to load users:', err);
     showLoginSplash();
@@ -647,15 +635,11 @@ function bindGlobalEvents() {
 
       try {
         const user = await window.API.login(inputVal);
-        window.appState.currentUser = user;
-        updateUserUI();
-        window.realtime.connect(user.id);
-        loginModal.classList.remove('active');
+        await completeUserLogin(user);
+        if (loginModal) loginModal.classList.remove('active');
         loginForm.reset();
-        await window.remindersManager.loadReminders();
-        window.remindersManager.renderReminders();
       } catch (err) {
-        alert('Login failed: ' + err.message);
+        showToast('Login Failed', err.message, 'error');
       }
     };
   }
@@ -678,14 +662,11 @@ function bindGlobalEvents() {
           department: dept,
           organization: "ProCom"
         });
-        window.appState.currentUser = user;
-        updateUserUI();
-        window.realtime.connect(user.id);
-        loginModal.classList.remove('active');
+        await completeUserLogin(user);
+        if (loginModal) loginModal.classList.remove('active');
         registerForm.reset();
-        alert(`Welcome to ProCom, ${user.full_name}! Your User ID is #${user.id}`);
       } catch (err) {
-        alert('Registration failed: ' + err.message);
+        showToast('Registration Failed', err.message, 'error');
       }
     };
   }
@@ -696,17 +677,14 @@ function bindGlobalEvents() {
       const uid = parseInt(btn.getAttribute('data-uid'));
       try {
         const user = await window.API.login(uid);
-        window.appState.currentUser = user;
-        updateUserUI();
-        window.realtime.connect(user.id);
+        await completeUserLogin(user);
         if (loginModal) loginModal.classList.remove('active');
-        await window.remindersManager.loadReminders();
-        window.remindersManager.renderReminders();
       } catch (err) {
-        alert(err.message);
+        showToast('Connection Error', err.message, 'error');
       }
     };
   });
+
 
   // Custom Avatar Photo Upload
   const avatarFileInput = document.getElementById('input-avatar-photo');

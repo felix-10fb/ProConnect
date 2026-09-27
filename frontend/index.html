@@ -27,34 +27,36 @@
       <p class="splash-subtitle">AI-powered communication platform with smart scheduling, real-time collaboration, and intelligent reminders</p>
 
       <div class="splash-form-card">
-        <div class="form-group" style="margin-bottom:12px;">
-          <label class="form-label">Connect via User ID or Username</label>
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="splash-login-input" class="form-input" style="flex:1;" placeholder="Enter User ID (e.g. 1) or username">
-            <button type="button" class="btn-primary" id="splash-login-btn">Connect</button>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label class="form-label" style="margin-bottom:8px; font-weight:600;">Connect via User ID or Username</label>
+          <div class="splash-connect-row">
+            <input type="text" id="splash-login-input" class="form-input splash-input" placeholder="Enter User ID (e.g. 1) or username">
+            <button type="button" class="btn-primary splash-connect-btn" id="splash-login-btn">Connect</button>
           </div>
         </div>
 
         <div class="splash-divider">or quick connect</div>
 
-        <div class="splash-quick-connect">
-          <button class="splash-quick-btn" data-uid="1">👤 Alex Morgan</button>
-          <button class="splash-quick-btn" data-uid="2">👩 Sarah Chen</button>
-          <button class="splash-quick-btn" data-uid="3">👨 Marcus Vance</button>
-          <button class="splash-quick-btn" data-uid="4">👩‍🔬 Elena Rostova</button>
+        <div class="splash-quick-connect-grid">
+          <button type="button" class="splash-quick-btn" data-uid="1">👤 Alex Morgan</button>
+          <button type="button" class="splash-quick-btn" data-uid="2">👩 Sarah Chen</button>
+          <button type="button" class="splash-quick-btn" data-uid="3">👨 Marcus Vance</button>
+          <button type="button" class="splash-quick-btn" data-uid="4">👩‍🔬 Elena Rostova</button>
         </div>
 
         <div class="splash-divider">new member?</div>
 
-        <details>
-          <summary style="font-size:0.85rem;font-weight:700;color:#a5b4fc;cursor:pointer;">+ Register New Account</summary>
-          <form id="splash-register-form" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
-            <input type="text" id="splash-reg-fullname" class="form-input" placeholder="Full Name" required>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="splash-reg-username" class="form-input" style="flex:1;" placeholder="Username" required>
-              <input type="email" id="splash-reg-email" class="form-input" style="flex:1;" placeholder="Email" required>
+        <details class="splash-register-details">
+          <summary style="font-size:0.85rem; font-weight:700; color:#a5b4fc; cursor:pointer; outline:none; user-select:none;">+ Register New Account</summary>
+          <form id="splash-register-form" style="display:flex; flex-direction:column; gap:12px; margin-top:14px; width:100%;">
+            <div class="form-group" style="width:100%;">
+              <input type="text" id="splash-reg-fullname" class="form-input splash-input" placeholder="Full Name" required>
             </div>
-            <button type="submit" class="btn-primary" style="width:100%;">Create Account & Connect</button>
+            <div class="splash-grid-two">
+              <input type="text" id="splash-reg-username" class="form-input splash-input" placeholder="Username" required>
+              <input type="email" id="splash-reg-email" class="form-input splash-input" placeholder="Email" required>
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; height:44px; font-weight:700; border-radius:10px; margin-top:4px;">Create Account & Connect</button>
           </form>
         </details>
       </div>

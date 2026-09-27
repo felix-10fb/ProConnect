@@ -2202,9 +2202,12 @@ input:checked + .slider:before { transform: translateX(16px); }
 
 .splash-content {
   text-align: center;
-  max-width: 460px;
-  padding: 40px;
-  animation: fadeSlideUp 0.8s ease-out;
+  width: 100%;
+  max-width: 500px;
+  padding: 30px 20px;
+  margin: 0 auto;
+  animation: fadeSlideUp 0.6s ease-out;
+  box-sizing: border-box;
 }
 
 @keyframes fadeSlideUp {
@@ -2223,7 +2226,7 @@ input:checked + .slider:before { transform: translateX(16px); }
   color: #fff;
   font-size: 2rem;
   font-weight: 800;
-  margin: 0 auto 24px;
+  margin: 0 auto 20px;
   box-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
   animation: logoPulse 3s infinite;
 }
@@ -2245,47 +2248,90 @@ input:checked + .slider:before { transform: translateX(16px); }
 }
 
 .splash-subtitle {
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   color: #64748b;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
   line-height: 1.5;
 }
 
 .splash-form-card {
-  background: rgba(22, 32, 56, 0.65);
-  border: 1px solid rgba(255,255,255,0.1);
+  width: 100%;
+  background: rgba(22, 32, 56, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
-  padding: 28px;
-  backdrop-filter: blur(16px);
+  padding: 26px 22px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   text-align: left;
+  box-sizing: border-box;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
 .splash-form-card .form-label {
   color: #94a3b8;
+  font-size: 0.85rem;
 }
 
-.splash-form-card .form-input {
-  background: rgba(8, 12, 20, 0.6);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #f8fafc;
-}
-
-.splash-form-card .form-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
-}
-
-.splash-quick-connect {
+.splash-connect-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.splash-input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  box-sizing: border-box;
+  background: rgba(8, 12, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0 14px;
+  color: #f8fafc;
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.splash-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.35);
+}
+
+.splash-connect-btn {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 22px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.splash-quick-connect-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
 }
 
 .splash-quick-btn {
-  padding: 8px 16px;
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 42px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.28);
   color: #a5b4fc;
   border-radius: 10px;
   font-size: 0.82rem;
@@ -2293,12 +2339,31 @@ input:checked + .slider:before { transform: translateX(16px); }
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 .splash-quick-btn:hover {
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.28);
   color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.splash-grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.splash-grid-two .splash-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .splash-org-badge {
@@ -2312,7 +2377,7 @@ input:checked + .slider:before { transform: translateX(16px); }
   color: #10b981;
   font-size: 0.78rem;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .splash-divider {
@@ -2330,6 +2395,7 @@ input:checked + .slider:before { transform: translateX(16px); }
   height: 1px;
   background: rgba(255,255,255,0.08);
 }
+
 
 /* ==========================================================================
    NOTIFICATION TOAST SYSTEM
