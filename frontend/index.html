@@ -15,6 +15,55 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+  <!-- SPLASH LOGIN SCREEN -->
+  <div class="splash-screen" id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo">P</div>
+      <div class="splash-org-badge">
+        <div class="pulse-dot" style="width:6px;height:6px;background:#10b981;border-radius:50%;box-shadow:0 0 8px #10b981;"></div>
+        <span>ProCom Enterprise Workspace</span>
+      </div>
+      <h1 class="splash-title">ProCom</h1>
+      <p class="splash-subtitle">AI-powered communication platform with smart scheduling, real-time collaboration, and intelligent reminders</p>
+
+      <div class="splash-form-card">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Connect via User ID or Username</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="splash-login-input" class="form-input" style="flex:1;" placeholder="Enter User ID (e.g. 1) or username">
+            <button type="button" class="btn-primary" id="splash-login-btn">Connect</button>
+          </div>
+        </div>
+
+        <div class="splash-divider">or quick connect</div>
+
+        <div class="splash-quick-connect">
+          <button class="splash-quick-btn" data-uid="1">👤 Alex Morgan</button>
+          <button class="splash-quick-btn" data-uid="2">👩 Sarah Chen</button>
+          <button class="splash-quick-btn" data-uid="3">👨 Marcus Vance</button>
+          <button class="splash-quick-btn" data-uid="4">👩‍🔬 Elena Rostova</button>
+        </div>
+
+        <div class="splash-divider">new member?</div>
+
+        <details>
+          <summary style="font-size:0.85rem;font-weight:700;color:#a5b4fc;cursor:pointer;">+ Register New Account</summary>
+          <form id="splash-register-form" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+            <input type="text" id="splash-reg-fullname" class="form-input" placeholder="Full Name" required>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="splash-reg-username" class="form-input" style="flex:1;" placeholder="Username" required>
+              <input type="email" id="splash-reg-email" class="form-input" style="flex:1;" placeholder="Email" required>
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%;">Create Account & Connect</button>
+          </form>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
   <div class="app-container">
 
     <!-- Top App Header -->
@@ -309,6 +358,162 @@
               <div class="scanner-result-box" id="scanner-result-box">
                 <div style="color:var(--text-muted);">Waiting for text input...</div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. SETTINGS & APPEARANCE VIEW -->
+        <div class="settings-view" id="settings-view">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Settings & Appearance</h2>
+              <p>Customize your ProCom workspace with themes, colors, and profile settings</p>
+            </div>
+          </div>
+
+          <!-- Profile Section -->
+          <div class="settings-section">
+            <div class="settings-section-title">👤 Profile</div>
+            <div class="settings-section-desc">Your ProCom identity and organization details</div>
+            <div class="profile-settings-card">
+              <img src="" id="settings-profile-avatar" class="profile-avatar-large" alt="Avatar">
+              <div class="profile-info-block">
+                <div class="profile-info-name" id="settings-profile-name">Alex Morgan</div>
+                <div class="profile-info-detail" id="settings-profile-meta">@alex_morgan • #1 • Engineering</div>
+                <div class="profile-info-detail">Organization: <strong style="color:var(--primary);">ProCom</strong></div>
+              </div>
+              <label class="btn-secondary" style="font-size:0.8rem;cursor:pointer;margin-left:auto;">
+                📸 Change Photo
+                <input type="file" id="settings-avatar-upload" accept="image/*" style="display:none;">
+              </label>
+            </div>
+          </div>
+
+          <!-- Themes Section -->
+          <div class="settings-section">
+            <div class="settings-section-title">🎨 Theme & Appearance</div>
+            <div class="settings-section-desc">Choose from preset themes or create your own custom palette</div>
+            <div class="theme-grid" id="theme-grid">
+              <!-- Dark Obsidian -->
+              <div class="theme-card active" data-theme="dark">
+                <div class="theme-swatch-row">
+                  <div class="theme-swatch" style="background:#080c14;"></div>
+                  <div class="theme-swatch" style="background:#6366f1;"></div>
+                  <div class="theme-swatch" style="background:#06b6d4;"></div>
+                  <div class="theme-swatch" style="background:#10b981;"></div>
+                </div>
+                <div class="theme-card-name">Dark Obsidian</div>
+              </div>
+              <!-- Light Slate -->
+              <div class="theme-card" data-theme="light">
+                <div class="theme-swatch-row">
+                  <div class="theme-swatch" style="background:#f1f5f9;"></div>
+                  <div class="theme-swatch" style="background:#6366f1;"></div>
+                  <div class="theme-swatch" style="background:#06b6d4;"></div>
+                  <div class="theme-swatch" style="background:#10b981;"></div>
+                </div>
+                <div class="theme-card-name">Light Slate</div>
+              </div>
+              <!-- Midnight Blue -->
+              <div class="theme-card" data-theme="midnight">
+                <div class="theme-swatch-row">
+                  <div class="theme-swatch" style="background:#0a0e1a;"></div>
+                  <div class="theme-swatch" style="background:#3b82f6;"></div>
+                  <div class="theme-swatch" style="background:#38bdf8;"></div>
+                  <div class="theme-swatch" style="background:#34d399;"></div>
+                </div>
+                <div class="theme-card-name">Midnight Blue</div>
+              </div>
+              <!-- Forest -->
+              <div class="theme-card" data-theme="forest">
+                <div class="theme-swatch-row">
+                  <div class="theme-swatch" style="background:#071209;"></div>
+                  <div class="theme-swatch" style="background:#22c55e;"></div>
+                  <div class="theme-swatch" style="background:#2dd4bf;"></div>
+                  <div class="theme-swatch" style="background:#a78bfa;"></div>
+                </div>
+                <div class="theme-card-name">Forest</div>
+              </div>
+              <!-- Sunset -->
+              <div class="theme-card" data-theme="sunset">
+                <div class="theme-swatch-row">
+                  <div class="theme-swatch" style="background:#1a0a05;"></div>
+                  <div class="theme-swatch" style="background:#f97316;"></div>
+                  <div class="theme-swatch" style="background:#fbbf24;"></div>
+                  <div class="theme-swatch" style="background:#c084fc;"></div>
+                </div>
+                <div class="theme-card-name">Sunset</div>
+              </div>
+              <!-- Rose -->
+              <div class="theme-card" data-theme="rose">
+                <div class="theme-swatch-row">
+                  <div class="theme-swatch" style="background:#1a050e;"></div>
+                  <div class="theme-swatch" style="background:#f43f5e;"></div>
+                  <div class="theme-swatch" style="background:#f472b6;"></div>
+                  <div class="theme-swatch" style="background:#c084fc;"></div>
+                </div>
+                <div class="theme-card-name">Rose</div>
+              </div>
+              <!-- Ocean -->
+              <div class="theme-card" data-theme="ocean">
+                <div class="theme-swatch-row">
+                  <div class="theme-swatch" style="background:#03111a;"></div>
+                  <div class="theme-swatch" style="background:#06b6d4;"></div>
+                  <div class="theme-swatch" style="background:#22d3ee;"></div>
+                  <div class="theme-swatch" style="background:#2dd4bf;"></div>
+                </div>
+                <div class="theme-card-name">Ocean</div>
+              </div>
+            </div>
+
+            <!-- Custom Color Picker -->
+            <div class="custom-color-row">
+              <span style="font-size:0.85rem;font-weight:700;">🎯 Custom:</span>
+              <div class="color-picker-group">
+                <input type="color" id="custom-color-primary" value="#6366f1">
+                <label>Primary</label>
+              </div>
+              <div class="color-picker-group">
+                <input type="color" id="custom-color-bg" value="#080c14">
+                <label>Background</label>
+              </div>
+              <div class="color-picker-group">
+                <input type="color" id="custom-color-surface" value="#0e1526">
+                <label>Surface</label>
+              </div>
+              <div class="color-picker-group">
+                <input type="color" id="custom-color-accent" value="#06b6d4">
+                <label>Accent</label>
+              </div>
+              <button class="btn-primary" id="btn-apply-custom-theme" style="padding:8px 16px;font-size:0.8rem;">Apply Custom</button>
+            </div>
+          </div>
+
+          <!-- Database Section -->
+          <div class="settings-section">
+            <div class="settings-section-title">⚡ Database Connection</div>
+            <div class="settings-section-desc">Neon Cloud PostgreSQL status and configuration</div>
+            <div class="profile-settings-card" style="flex-direction:column;align-items:stretch;gap:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:0.88rem;font-weight:600;">Engine:</span>
+                <span style="font-size:0.88rem;font-weight:700;color:var(--accent-emerald);" id="settings-db-engine">Loading...</span>
+              </div>
+              <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted);background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;word-break:break-all;" id="settings-db-url">Checking...</div>
+              <div style="display:flex;gap:8px;">
+                <input type="text" id="settings-db-input" class="form-input" style="flex:1;font-size:0.82rem;" placeholder="postgresql://user:pass@ep-xyz.neon.tech/dbname">
+                <button class="btn-primary" id="btn-settings-save-db" style="font-size:0.82rem;">Save</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- About Section -->
+          <div class="settings-section">
+            <div class="settings-section-title">ℹ️ About ProCom</div>
+            <div class="settings-section-desc">Version 2.5.0 • AI-Integrated Communication Platform</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+              ProCom is an enterprise-grade communication platform featuring real-time messaging, 
+              WebRTC audio/video calling, AI-powered NLP reminder extraction, meeting scheduling 
+              with RSVP tracking, communities & broadcast channels, and Neon Cloud PostgreSQL integration.
             </div>
           </div>
         </div>

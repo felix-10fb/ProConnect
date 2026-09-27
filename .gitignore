@@ -20,3 +20,8 @@ backend/uploads/*
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Vercel
+.vercel/
+node_modules/
+

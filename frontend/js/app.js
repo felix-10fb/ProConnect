@@ -15,35 +15,186 @@ window.appState = {
   dbStatus: null
 };
 
+// All known theme class names
+const THEME_CLASSES = ['light-theme', 'theme-midnight', 'theme-forest', 'theme-sunset', 'theme-rose', 'theme-ocean', 'theme-custom'];
+
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  initSplashScreen();
   await initApp();
 });
 
+// ==================== TOAST NOTIFICATIONS ====================
+function showToast(title, message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const icons = { success: '✅', info: '💬', warn: '⚠️', error: '❌' };
+  const toast = document.createElement('div');
+  toast.className = 'toast-item';
+  toast.innerHTML = `
+    <div class="toast-icon ${type}">${icons[type] || '💬'}</div>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// ==================== SPLASH SCREEN ====================
+function initSplashScreen() {
+  const splash = document.getElementById('splash-screen');
+  if (!splash) return;
+
+  // If user is already saved, skip splash
+  const savedUserId = localStorage.getItem('procom_active_user_id');
+  if (savedUserId) {
+    splash.classList.add('hidden');
+    setTimeout(() => splash.style.display = 'none', 600);
+    return;
+  }
+
+  // Splash login button
+  const loginBtn = document.getElementById('splash-login-btn');
+  const loginInput = document.getElementById('splash-login-input');
+  if (loginBtn && loginInput) {
+    const doSplashLogin = async () => {
+      const val = loginInput.value.trim();
+      if (!val) return;
+      try {
+        const user = await window.API.login(val);
+        window.appState.currentUser = user;
+        updateUserUI();
+        localStorage.setItem('procom_active_user_id', user.id);
+        window.realtime.connect(user.id);
+        splash.classList.add('hidden');
+        setTimeout(() => splash.style.display = 'none', 600);
+        showToast('Welcome back!', `Connected as ${user.full_name} (#${user.id})`, 'success');
+      } catch (err) {
+        showToast('Login Failed', err.message, 'error');
+      }
+    };
+    loginBtn.onclick = doSplashLogin;
+    loginInput.onkeydown = (e) => { if (e.key === 'Enter') doSplashLogin(); };
+  }
+
+  // Splash quick connect buttons
+  document.querySelectorAll('.splash-quick-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const uid = parseInt(btn.getAttribute('data-uid'));
+      try {
+        const user = await window.API.login(uid);
+        window.appState.currentUser = user;
+        updateUserUI();
+        localStorage.setItem('procom_active_user_id', user.id);
+        window.realtime.connect(user.id);
+        splash.classList.add('hidden');
+        setTimeout(() => splash.style.display = 'none', 600);
+        showToast('Welcome!', `Connected as ${user.full_name}`, 'success');
+      } catch (err) {
+        showToast('Connection Error', err.message, 'error');
+      }
+    };
+  });
+
+  // Splash register form
+  const regForm = document.getElementById('splash-register-form');
+  if (regForm) {
+    regForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('splash-reg-fullname').value.trim();
+      const username = document.getElementById('splash-reg-username').value.trim().toLowerCase();
+      const email = document.getElementById('splash-reg-email').value.trim();
+      try {
+        const user = await window.API.register({
+          full_name: fullName,
+          username,
+          email,
+          department: 'Engineering',
+          organization: 'ProCom'
+        });
+        window.appState.currentUser = user;
+        updateUserUI();
+        localStorage.setItem('procom_active_user_id', user.id);
+        window.realtime.connect(user.id);
+        splash.classList.add('hidden');
+        setTimeout(() => splash.style.display = 'none', 600);
+        showToast('Account Created!', `Welcome to ProCom, ${user.full_name}! Your ID is #${user.id}`, 'success');
+      } catch (err) {
+        showToast('Registration Failed', err.message, 'error');
+      }
+    };
+  }
+}
+
+// ==================== THEME ENGINE ====================
 function initTheme() {
   const savedTheme = localStorage.getItem('procom_theme') || 'dark';
   window.appState.theme = savedTheme;
   applyTheme(savedTheme);
+
+  // Restore custom colors if saved
+  if (savedTheme === 'custom') {
+    const customColors = JSON.parse(localStorage.getItem('procom_custom_colors') || '{}');
+    if (customColors.primary) applyCustomColors(customColors);
+  }
 }
 
 function applyTheme(theme) {
+  // Remove all theme classes
+  THEME_CLASSES.forEach(cls => document.body.classList.remove(cls));
+
+  // Apply appropriate class
   if (theme === 'light') {
     document.body.classList.add('light-theme');
-  } else {
-    document.body.classList.remove('light-theme');
+  } else if (theme !== 'dark' && theme !== 'custom') {
+    document.body.classList.add(`theme-${theme}`);
+  } else if (theme === 'custom') {
+    document.body.classList.add('theme-custom');
   }
+
+  // Update header toggle button icon
   const btn = document.getElementById('theme-toggle-btn');
   if (btn) {
-    btn.innerHTML = theme === 'light' ? '🌙' : '☀️';
-    btn.title = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+    const themeIcons = {
+      dark: '☀️', light: '🌙', midnight: '🌊', forest: '🌿',
+      sunset: '🌅', rose: '🌹', ocean: '🐳', custom: '🎨'
+    };
+    btn.innerHTML = themeIcons[theme] || '☀️';
+    btn.title = `Current: ${theme.charAt(0).toUpperCase() + theme.slice(1)} — Click to cycle`;
   }
+
+  // Update settings theme grid active state
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.classList.toggle('active', card.getAttribute('data-theme') === theme);
+  });
+
+  window.appState.theme = theme;
   localStorage.setItem('procom_theme', theme);
 }
 
-function toggleTheme() {
-  const newTheme = window.appState.theme === 'dark' ? 'light' : 'dark';
-  window.appState.theme = newTheme;
-  applyTheme(newTheme);
+function cycleTheme() {
+  const order = ['dark', 'light', 'midnight', 'forest', 'sunset', 'rose', 'ocean'];
+  const currentIdx = order.indexOf(window.appState.theme);
+  const nextIdx = (currentIdx + 1) % order.length;
+  applyTheme(order[nextIdx]);
+  showToast('Theme Changed', `Switched to ${order[nextIdx].charAt(0).toUpperCase() + order[nextIdx].slice(1)}`, 'info');
+}
+
+function applyCustomColors(colors) {
+  document.body.style.setProperty('--primary', colors.primary);
+  document.body.style.setProperty('--bg-base', colors.bg);
+  document.body.style.setProperty('--bg-surface', colors.surface);
+  document.body.style.setProperty('--accent-cyan', colors.accent);
+  // Derived values
+  document.body.style.setProperty('--primary-glow', colors.primary + '66');
+  document.body.style.setProperty('--primary-hover', colors.primary);
 }
 
 async function initApp() {
@@ -436,9 +587,9 @@ function appendMessageToStream(m) {
 }
 
 function bindGlobalEvents() {
-  // Theme Toggle Button
+  // Theme Toggle Button (cycles through all presets)
   const themeBtn = document.getElementById('theme-toggle-btn');
-  if (themeBtn) themeBtn.onclick = toggleTheme;
+  if (themeBtn) themeBtn.onclick = cycleTheme;
 
   // Search Input in Header
   const orgSearchInput = document.getElementById('org-search-input');
@@ -987,27 +1138,27 @@ function switchTab(tab) {
   const chatView = document.getElementById('chat-view-container');
   const calendarView = document.getElementById('calendar-view');
   const remindersView = document.getElementById('reminders-view');
+  const settingsView = document.getElementById('settings-view');
   const secondarySidebar = document.getElementById('secondary-sidebar');
+
+  // Hide all views first
+  if (chatView) chatView.style.display = 'none';
+  if (calendarView) calendarView.classList.remove('active');
+  if (remindersView) remindersView.classList.remove('active');
+  if (settingsView) settingsView.classList.remove('active');
+  if (secondarySidebar) secondarySidebar.style.display = 'none';
 
   if (tab === 'chats') {
     if (chatView) chatView.style.display = 'flex';
-    if (calendarView) calendarView.classList.remove('active');
-    if (remindersView) remindersView.classList.remove('active');
     if (secondarySidebar) secondarySidebar.style.display = 'flex';
   } else if (tab === 'calendar') {
-    if (chatView) chatView.style.display = 'none';
     if (calendarView) calendarView.classList.add('active');
-    if (remindersView) remindersView.classList.remove('active');
-    if (secondarySidebar) secondarySidebar.style.display = 'none';
     window.calendarManager.loadMeetings().then(() => {
       window.calendarManager.renderCalendar();
       window.calendarManager.renderUpcomingMeetings();
     });
   } else if (tab === 'reminders') {
-    if (chatView) chatView.style.display = 'none';
-    if (calendarView) calendarView.classList.remove('active');
     if (remindersView) remindersView.classList.add('active');
-    if (secondarySidebar) secondarySidebar.style.display = 'none';
     window.remindersManager.loadReminders().then(() => {
       window.remindersManager.renderReminders();
     });
@@ -1017,7 +1168,89 @@ function switchTab(tab) {
       window.callingEngine.startCall(2, conv.id, conv.title, conv.avatar, 'video');
     }
   } else if (tab === 'settings') {
-    const dbModal = document.getElementById('db-config-modal');
-    if (dbModal) dbModal.classList.add('active');
+    if (settingsView) settingsView.classList.add('active');
+    updateSettingsView();
   }
 }
+
+// ==================== SETTINGS VIEW LOGIC ====================
+function updateSettingsView() {
+  const u = window.appState.currentUser;
+  if (u) {
+    const avatarEl = document.getElementById('settings-profile-avatar');
+    const nameEl = document.getElementById('settings-profile-name');
+    const metaEl = document.getElementById('settings-profile-meta');
+    if (avatarEl) avatarEl.src = u.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}`;
+    if (nameEl) nameEl.textContent = u.full_name;
+    if (metaEl) metaEl.textContent = `@${u.username} • #${u.id} • ${u.department || 'Engineering'}`;
+  }
+
+  // Update DB status in settings
+  if (window.appState.dbStatus) {
+    const engineEl = document.getElementById('settings-db-engine');
+    const urlEl = document.getElementById('settings-db-url');
+    if (engineEl) engineEl.textContent = window.appState.dbStatus.engine_type;
+    if (urlEl) urlEl.textContent = window.appState.dbStatus.masked_url || 'Using local chatspace.db';
+  }
+
+  // Theme grid click handlers
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.onclick = () => {
+      const theme = card.getAttribute('data-theme');
+      applyTheme(theme);
+      showToast('Theme Applied', `Switched to ${card.querySelector('.theme-card-name').textContent}`, 'success');
+    };
+  });
+
+  // Settings avatar upload
+  const settingsAvatarUpload = document.getElementById('settings-avatar-upload');
+  if (settingsAvatarUpload) {
+    settingsAvatarUpload.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file || !window.appState.currentUser) return;
+      try {
+        const res = await window.API.uploadAvatar(window.appState.currentUser.id, file);
+        window.appState.currentUser.avatar = res.avatar;
+        updateUserUI();
+        updateSettingsView();
+        showToast('Avatar Updated', 'Your profile photo has been changed', 'success');
+      } catch (err) {
+        showToast('Upload Error', err.message, 'error');
+      }
+    };
+  }
+
+  // Custom theme color picker
+  const btnApplyCustom = document.getElementById('btn-apply-custom-theme');
+  if (btnApplyCustom) {
+    btnApplyCustom.onclick = () => {
+      const colors = {
+        primary: document.getElementById('custom-color-primary').value,
+        bg: document.getElementById('custom-color-bg').value,
+        surface: document.getElementById('custom-color-surface').value,
+        accent: document.getElementById('custom-color-accent').value
+      };
+      applyTheme('custom');
+      applyCustomColors(colors);
+      localStorage.setItem('procom_custom_colors', JSON.stringify(colors));
+      showToast('Custom Theme', 'Your custom color palette has been applied!', 'success');
+    };
+  }
+
+  // Settings DB save
+  const btnSettingsSaveDb = document.getElementById('btn-settings-save-db');
+  if (btnSettingsSaveDb) {
+    btnSettingsSaveDb.onclick = async () => {
+      const urlInput = document.getElementById('settings-db-input').value.trim();
+      if (!urlInput) return;
+      try {
+        const res = await window.API.configureDatabase(urlInput);
+        showToast('Database Updated', res.message, 'success');
+        refreshDatabaseStatus();
+      } catch (err) {
+        showToast('Database Error', err.message, 'error');
+      }
+    };
+  }
+}
+
