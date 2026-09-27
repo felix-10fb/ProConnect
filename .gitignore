@@ -1,0 +1,22 @@
+# Environments
+.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.db
+
+# Uploaded media (keep folder empty in git)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

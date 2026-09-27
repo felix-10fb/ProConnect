@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProCom • AI-Integrated Communication Platform</title>
+  <meta name="description" content="ProCom: Enterprise AI communication platform with audio/video calling, meeting scheduling, automated NLP reminder extraction, groups, communities, broadcasts, and Neon PostgreSQL.">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Top App Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">P</div>
+        <div style="display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="brand-title">ProCom</span>
+            <span class="brand-badge">WORKSPACE</span>
+          </div>
+          <span style="font-size:0.68rem; color:var(--text-muted); font-weight:600;">Enterprise Communication & Scheduling</span>
+        </div>
+      </div>
+
+      <!-- ProCom Organization Search Bar -->
+      <div class="org-search-bar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text-muted);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="org-search-input" class="org-search-input" placeholder="Search ProCom by #user_id, member, department, files...">
+      </div>
+
+      <!-- AI Auto-Scheduling Engine Active Indicator -->
+      <div class="ai-status-pill" id="ai-engine-status-pill">
+        <div class="pulse-dot"></div>
+        <span>NLP Engine: <strong>ACTIVE</strong></span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Theme Toggle (Light / Dark) -->
+        <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle Light / Dark Mode">
+          ☀️
+        </button>
+
+        <!-- Neon PostgreSQL Status & Config Button -->
+        <button class="db-badge-btn" id="db-badge-btn" title="View or configure Neon PostgreSQL database">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z"></path></svg>
+          <span id="db-status-text">Neon Cloud PostgreSQL</span>
+        </button>
+
+        <!-- User Profile & Login / Switch Button -->
+        <div class="user-profile-badge" id="user-profile-badge" title="Click to Switch User or Login">
+          <img src="" id="current-user-avatar" class="user-avatar-small" alt="Avatar">
+          <div style="display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:0.85rem; font-weight:700;" id="current-user-name">Alex Morgan</span>
+              <span style="font-size:0.7rem; font-weight:700; color:var(--primary);" id="current-user-id-badge">#1</span>
+            </div>
+            <span style="font-size:0.65rem; color:var(--text-muted);">ProCom • Switch</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Organization Search Results Overlay -->
+    <div class="search-results-overlay" id="search-results-overlay">
+      <div class="search-results-container" id="search-results-container">
+        <!-- Search items populated dynamically -->
+      </div>
+    </div>
+
+    <!-- App Body -->
+    <div class="app-body">
+
+      <!-- Leftmost Navigation Rail -->
+      <nav class="nav-rail">
+        <button class="rail-btn active" data-tab="chats" id="rail-btn-chats" title="Chats & Spaces">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span class="rail-btn-label">Chats</span>
+        </button>
+
+        <button class="rail-btn" data-tab="calls" id="rail-btn-calls" title="Video & Audio Calling">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+          <span class="rail-btn-label">Calls</span>
+        </button>
+
+        <button class="rail-btn" data-tab="calendar" id="rail-btn-calendar" title="Calendar & Meetings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span class="rail-btn-label">Calendar</span>
+        </button>
+
+        <button class="rail-btn" data-tab="reminders" id="rail-btn-reminders" title="AI Auto-Reminders & Deadlines">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span class="rail-btn-label">Reminders</span>
+          <span class="rail-badge" id="rail-reminders-badge" style="display:none;">0</span>
+        </button>
+
+        <div class="rail-spacer"></div>
+
+        <button class="rail-btn" data-tab="settings" id="rail-btn-settings" title="Settings & Database">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span class="rail-btn-label">Settings</span>
+        </button>
+      </nav>
+
+      <!-- Secondary Sidebar: Conversations & Channels -->
+      <aside class="secondary-sidebar" id="secondary-sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title-row">
+            <span class="sidebar-title">ProCom Spaces</span>
+            <button class="icon-btn-round" id="btn-create-conversation" title="Create New Group, Community or Broadcast">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          </div>
+
+          <!-- Category Filter Tabs -->
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="direct">DMs</button>
+            <button class="filter-tab" data-filter="group">Groups</button>
+            <button class="filter-tab" data-filter="community">Community</button>
+            <button class="filter-tab" data-filter="broadcast">Broadcast</button>
+          </div>
+        </div>
+
+        <!-- Conversation Items List -->
+        <div class="conversation-list" id="conversation-list-container">
+          <!-- Populated dynamically -->
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <main class="main-workspace">
+
+        <!-- 1. CHAT & MESSAGING VIEW -->
+        <div class="chat-view" id="chat-view-container">
+
+          <!-- Chat Header -->
+          <div class="chat-header">
+            <div class="chat-target-info">
+              <img src="" id="chat-target-avatar" class="target-avatar" alt="Avatar">
+              <div class="target-meta">
+                <div class="target-name" id="chat-target-name">Direct Chat</div>
+                <div class="target-status" id="chat-target-status">Online</div>
+              </div>
+            </div>
+
+            <!-- Call & Action Buttons -->
+            <div class="chat-header-actions">
+              <button class="btn-header-call btn-video-call" id="btn-header-video-call" title="Start HD Video Call">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                <span>Video Call</span>
+              </button>
+              <button class="btn-header-call btn-audio-call" id="btn-header-audio-call" title="Start Audio Call">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <span>Voice Call</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Community Channels Sub-bar -->
+          <div class="community-channels-strip" id="community-channels-strip" style="display:none;">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Messages Stream -->
+          <div class="messages-stream" id="messages-stream">
+            <!-- Messages, Attachments, and AI Action Cards rendered here -->
+          </div>
+
+          <!-- Chat Composer Area -->
+          <div class="chat-composer-area">
+            <div class="composer-toolbar">
+              <!-- AI Auto-Schedule Toggle -->
+              <div class="ai-auto-toggle-wrapper">
+                <label class="switch">
+                  <input type="checkbox" id="composer-auto-schedule-toggle" checked>
+                  <span class="slider"></span>
+                </label>
+                <span>Auto-Schedule Reminders from Text</span>
+              </div>
+
+              <!-- Quick AI Prompts -->
+              <div class="quick-prompts-bar">
+                <button class="quick-prompt-btn" data-prompt="Submit final project report tomorrow at 5pm urgent">
+                  ⏰ Submit report tomorrow 5pm
+                </button>
+                <button class="quick-prompt-btn" data-prompt="Let's meet with the team this Friday at 3:00 PM">
+                  📅 Team sync Friday 3pm
+                </button>
+                <button class="quick-prompt-btn" data-prompt="@AI summarize conversation">
+                  🤖 @AI summarize
+                </button>
+              </div>
+            </div>
+
+            <!-- Staged File Upload Preview -->
+            <div class="staged-file-preview" id="staged-file-preview">
+              <span>📎</span>
+              <span id="staged-file-name" style="font-weight:600;">file.pdf</span>
+              <button class="btn-remove-file" id="btn-remove-staged-file" title="Remove attachment">×</button>
+            </div>
+
+            <!-- Input Row -->
+            <div class="composer-input-row">
+              <!-- Photo Upload Button -->
+              <button class="btn-composer-icon" id="btn-upload-photo" title="Upload Photo / Image">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              </button>
+
+              <!-- Document / File Upload Button -->
+              <button class="btn-composer-icon" id="btn-upload-file" title="Attach Document or File">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+              </button>
+
+              <input type="file" id="chat-file-input" style="display:none;">
+
+              <input type="text" id="chat-input-text" class="composer-input" placeholder="Type a message, mention a deadline, or ask @AI...">
+
+              <button class="btn-send" id="btn-send-message" title="Send Message">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CALENDAR & MEETINGS VIEW -->
+        <div class="calendar-view" id="calendar-view">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Calendar & Meeting Scheduler</h2>
+              <p>Schedule video calls, coordinate ProCom events, track RSVPs, and auto-sync with text reminders</p>
+            </div>
+            <button class="btn-primary" id="btn-new-meeting">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Schedule Meeting</span>
+            </button>
+          </div>
+
+          <div class="calendar-grid-wrapper">
+            <div class="calendar-month-card">
+              <div class="calendar-month-header">
+                <h3 id="cal-month-title" style="font-size:1.15rem; font-weight:700;">September 2026</h3>
+                <div style="display:flex; gap:8px;">
+                  <button class="icon-btn-round" id="btn-cal-prev">&lt;</button>
+                  <button class="icon-btn-round" id="btn-cal-today" style="width:auto; padding:0 10px; font-size:0.78rem;">Today</button>
+                  <button class="icon-btn-round" id="btn-cal-next">&gt;</button>
+                </div>
+              </div>
+
+              <div class="calendar-days-header">
+                <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+              </div>
+              <div class="calendar-days-grid" id="cal-days-grid"></div>
+            </div>
+
+            <div class="meetings-sidebar-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:1.05rem; font-weight:700;">Upcoming Meetings</h3>
+                <span class="conv-type-tag community">Live RSVPs</span>
+              </div>
+              <div class="meetings-list" id="meetings-list-container"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. AI REMINDERS & AUTOSCHEDULER VIEW -->
+        <div class="reminders-view" id="reminders-view">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>AI Reminders & Deadline Engine</h2>
+              <p>Automatically extracted commitments and tasks from ProCom chats and emails</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="filter-tab reminder-filter-btn active" data-filter="all">All</button>
+              <button class="filter-tab reminder-filter-btn" data-filter="pending">Pending</button>
+              <button class="filter-tab reminder-filter-btn" data-filter="high">High Priority</button>
+              <button class="filter-tab reminder-filter-btn" data-filter="completed">Completed</button>
+            </div>
+          </div>
+
+          <div class="reminders-grid">
+            <div class="reminders-stream" id="reminders-stream-container"></div>
+
+            <div class="nlp-scanner-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:1.05rem; font-weight:700;">🧪 NLP Text Scanner Playground</h3>
+                <span class="brand-badge">Auto-Schedule</span>
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-secondary);">
+                Type or paste any conversational text below. The AI will detect dates, deadlines, urgency, and schedule it automatically!
+              </p>
+              <textarea id="scanner-input-text" class="scanner-textarea" placeholder="e.g. Please deploy the Neon PostgreSQL migration script by tomorrow at 4pm urgent..."></textarea>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:var(--text-secondary); cursor:pointer;">
+                  <input type="checkbox" id="scanner-auto-schedule" checked>
+                  <span>Auto-add to database</span>
+                </label>
+                <button class="btn-primary" id="btn-scanner-analyze" style="padding:6px 14px; font-size:0.8rem;">
+                  ⚡ Scan & Schedule
+                </button>
+              </div>
+              <div class="scanner-result-box" id="scanner-result-box">
+                <div style="color:var(--text-muted);">Waiting for text input...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- ==========================================================================
+         CALLING INTERFACE MODAL
+         ========================================================================== -->
+    <div class="call-modal-overlay" id="call-modal-overlay">
+      <div class="call-window">
+        <div class="call-topbar">
+          <div class="call-peer-info">
+            <h3 id="call-partner-name" style="font-size:1rem; font-weight:700; color:#fff;">Call Room</h3>
+            <span class="call-timer-badge" id="call-timer">00:00</span>
+            <div class="call-recording-pill">
+              <div class="rec-dot"></div>
+              <span>REC • AI Transcription Active</span>
+            </div>
+          </div>
+          <div style="font-size:0.82rem; color:#67e8f9;" id="call-status-text">
+            Connecting...
+          </div>
+        </div>
+
+        <div class="call-video-grid">
+          <div class="video-container" id="remote-video-container">
+            <video id="remote-video-feed" class="video-feed" autoplay playsinline></video>
+            <div class="video-avatar-fallback" id="remote-avatar-fallback" style="display:none;">
+              <img src="" id="remote-avatar-img" class="fallback-avatar-img" alt="Peer">
+              <span style="font-weight:700; color:#fff;" id="remote-fallback-name">Remote Participant</span>
+            </div>
+            <div class="video-tag">
+              <span>Remote Stream</span>
+              <div class="audio-wave-visualizer">
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="video-container" id="local-video-container">
+            <video id="local-video-feed" class="video-feed" autoplay playsinline muted></video>
+            <div class="video-avatar-fallback" id="local-avatar-fallback" style="display:none;">
+              <img src="" class="fallback-avatar-img" alt="You">
+              <span style="font-weight:700; color:#fff;">You</span>
+            </div>
+            <div class="video-tag">
+              <span>You (Local)</span>
+            </div>
+          </div>
+
+          <div class="call-transcription-drawer" id="call-transcription-drawer">
+            <div class="transcription-header">
+              <span>🤖 Live Meeting AI Notes</span>
+              <button class="icon-btn-round" onclick="window.callingEngine.toggleNotesDrawer()" style="width:24px; height:24px;">×</button>
+            </div>
+            <div class="transcription-body" id="transcription-body"></div>
+          </div>
+        </div>
+
+        <div class="call-controls-bar">
+          <button class="call-ctrl-btn" id="btn-call-mute" title="Mute/Unmute Mic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+          </button>
+          <button class="call-ctrl-btn" id="btn-call-video" title="Camera On/Off">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+          </button>
+          <button class="call-ctrl-btn" id="btn-call-screenshare" title="Share Screen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          </button>
+          <button class="call-ctrl-btn" id="btn-call-notes" title="Live AI Notes & Transcription">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </button>
+          <button class="call-ctrl-btn btn-hangup" id="btn-call-hangup" title="End Call">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incoming Call Toast -->
+    <div class="incoming-call-toast" id="incoming-call-toast">
+      <img src="" id="incoming-caller-avatar" class="user-avatar-small" style="width:44px; height:44px;" alt="Caller">
+      <div>
+        <div style="font-size:0.95rem; font-weight:700;" id="incoming-caller-name">Sarah Chen</div>
+        <div style="font-size:0.75rem; color:var(--accent-emerald);" id="incoming-call-type">Incoming Video Call</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-join-meeting" id="btn-toast-accept-call">Accept</button>
+        <button class="btn-secondary" id="btn-toast-decline-call" style="background:#ef4444; border:none; color:#fff;">Decline</button>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         MODAL: LOGIN & SWITCH ACCOUNT / REGISTER
+         ========================================================================== -->
+    <div class="modal-overlay" id="login-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <h3>Connect to ProCom</h3>
+            <p style="font-size:0.78rem; color:var(--text-muted);">Organization: <strong>ProCom Workspace</strong></p>
+          </div>
+          <button class="icon-btn-round btn-close-modal">×</button>
+        </div>
+
+        <!-- Quick Switch Demo Users -->
+        <div>
+          <label class="form-label" style="margin-bottom:8px; display:block;">Quick Connect Demo Profiles:</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn-secondary btn-demo-user" data-uid="1">👤 Alex Morgan (#1)</button>
+            <button class="btn-secondary btn-demo-user" data-uid="2">👩 Sarah Chen (#2)</button>
+            <button class="btn-secondary btn-demo-user" data-uid="3">👨 Marcus Vance (#3)</button>
+            <button class="btn-secondary btn-demo-user" data-uid="4">👩‍🔬 Elena Rostova (#4)</button>
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--border-subtle);">
+
+        <!-- Direct Login by User ID or Username -->
+        <form id="form-user-login" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Connect via User ID or Username</label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="login-input-id-or-name" class="form-input" style="flex:1;" placeholder="Enter User ID (e.g. 1) or username" required>
+              <button type="submit" class="btn-primary">Connect</button>
+            </div>
+          </div>
+        </form>
+
+        <hr style="border:none; border-top:1px solid var(--border-subtle);">
+
+        <!-- Register New User in ProCom -->
+        <details>
+          <summary style="font-size:0.85rem; font-weight:700; color:var(--primary); cursor:pointer;">+ Register New ProCom Member</summary>
+          <form id="form-user-register" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="reg-fullname" class="form-input" placeholder="e.g. Jordan Lee" required>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="reg-username" class="form-input" placeholder="jordan" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Department</label>
+                <select id="reg-dept" class="form-select">
+                  <option value="Engineering">Engineering</option>
+                  <option value="Design">Product & Design</option>
+                  <option value="AI Research">AI Research & NLP</option>
+                  <option value="Operations">Operations & Cloud</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="reg-email" class="form-input" placeholder="jordan@procom.io" required>
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top:6px;">Create Account & Connect</button>
+          </form>
+        </details>
+
+        <!-- Custom Avatar Upload -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding-top:8px; border-top:1px solid var(--border-subtle);">
+          <span style="font-size:0.8rem; color:var(--text-secondary);">Custom Avatar / Profile Photo:</span>
+          <label class="btn-secondary" style="font-size:0.75rem; cursor:pointer;">
+            📸 Upload Photo
+            <input type="file" id="input-avatar-photo" accept="image/*" style="display:none;">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Create Space / Group / Community / Broadcast -->
+    <div class="modal-overlay" id="create-conversation-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Create New Space</h3>
+          <button class="icon-btn-round btn-close-modal">×</button>
+        </div>
+        <form id="form-create-conversation" style="display:flex; flex-direction:column; gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Space Type</label>
+            <select id="conv-modal-type" class="form-select">
+              <option value="group">👥 Group (Multi-user Team Chat)</option>
+              <option value="community">🌐 Community (Organized Channels & Voice Stages)</option>
+              <option value="broadcast">📢 Broadcast Channel (Admin Announcements)</option>
+              <option value="direct">💬 Direct Message (1-on-1)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Space Name / Title</label>
+            <input type="text" id="conv-modal-title" class="form-input" placeholder="e.g. AI Research Group or Announcements" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description / Topic</label>
+            <input type="text" id="conv-modal-desc" class="form-input" placeholder="e.g. ProCom collaboration & schedule sync">
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary btn-close-modal">Cancel</button>
+            <button type="submit" class="btn-primary">Create Space</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Schedule Meeting -->
+    <div class="modal-overlay" id="new-meeting-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Schedule ProCom Video Meeting</h3>
+          <button class="icon-btn-round btn-close-modal">×</button>
+        </div>
+        <form id="form-new-meeting" style="display:flex; flex-direction:column; gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Meeting Title</label>
+            <input type="text" id="mtg-title" class="form-input" placeholder="e.g. Sprint Architecture Sync" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description / Agenda</label>
+            <input type="text" id="mtg-desc" class="form-input" placeholder="Discussing Neon PostgreSQL query performance & features">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <input type="date" id="mtg-date" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Start Time</label>
+              <input type="time" id="mtg-time" class="form-input" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Call Type</label>
+            <select id="mtg-type" class="form-select">
+              <option value="video">HD Video Conference</option>
+              <option value="audio">Voice Audio Room</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary btn-close-modal">Cancel</button>
+            <button type="submit" class="btn-primary">Confirm & Schedule</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Neon PostgreSQL Database Configuration -->
+    <div class="modal-overlay" id="db-config-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>⚡ Neon Cloud PostgreSQL Settings</h3>
+          <button class="icon-btn-round btn-close-modal">×</button>
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); display:flex; flex-direction:column; gap:8px;">
+          <div>Current Engine: <strong style="color:var(--accent-emerald);" id="db-modal-engine-name">Loading...</strong></div>
+          <div style="word-break:break-all; font-family:var(--font-mono); font-size:0.75rem; background:rgba(0,0,0,0.15); padding:8px; border-radius:6px;" id="db-modal-masked-url">
+            Checking configuration...
+          </div>
+        </div>
+        <form id="form-db-config" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Update Neon PostgreSQL Connection URL</label>
+            <input type="text" id="db-modal-input-url" class="form-input" placeholder="postgresql://user:password@ep-xyz.neon.tech/neondb?sslmode=require">
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary btn-close-modal">Close</button>
+            <button type="submit" class="btn-primary">Save to .env</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/sound.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/ws.js"></script>
+  <script src="/static/js/webrtc.js"></script>
+  <script src="/static/js/calendar.js"></script>
+  <script src="/static/js/reminders.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
