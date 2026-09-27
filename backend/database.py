@@ -9,15 +9,18 @@ load_dotenv()
 load_dotenv(Path(__file__).parent / ".env")
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-# Neon PostgreSQL connection string format:
-# postgresql://user:password@ep-xyz.region.aws.neon.tech/dbname?sslmode=require
-NEON_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+# Default Neon PostgreSQL connection string:
+DEFAULT_NEON_URL = "postgresql://neondb_owner:npg_5XeHTZLVw1Oo@ep-delicate-fire-b4s8apcf-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require"
+NEON_DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_NEON_URL).strip()
 
 # Resilient Engine Setup:
 # If DATABASE_URL is provided, test and use PostgreSQL (Neon).
 # Otherwise or if PostgreSQL connection fails, fallback seamlessly to local SQLite.
 db_type = "sqlite"
 engine = None
+
+# SQLite path - use /tmp on Vercel serverless environment
+sqlite_path = "/tmp/chatspace.db" if os.environ.get("VERCEL") else "./chatspace.db"
 
 if NEON_DATABASE_URL and ("postgres" in NEON_DATABASE_URL or "neon.tech" in NEON_DATABASE_URL):
     try:
@@ -45,13 +48,14 @@ if NEON_DATABASE_URL and ("postgres" in NEON_DATABASE_URL or "neon.tech" in NEON
         print("[DATABASE] Successfully connected to Neon PostgreSQL!")
     except Exception as e:
         print(f"[DATABASE WARNING] Could not connect to provided Neon PostgreSQL URL: {e}")
-        print("[DATABASE] Gracefully falling back to local SQLite database (chatspace.db)...")
-        engine = create_engine("sqlite:///./chatspace.db", connect_args={"check_same_thread": False})
+        print(f"[DATABASE] Gracefully falling back to SQLite database ({sqlite_path})...")
+        engine = create_engine(f"sqlite:///{sqlite_path}", connect_args={"check_same_thread": False})
         db_type = "sqlite_fallback"
 else:
-    print("[DATABASE] No Neon DATABASE_URL provided. Initializing local SQLite database (chatspace.db)...")
-    engine = create_engine("sqlite:///./chatspace.db", connect_args={"check_same_thread": False})
+    print(f"[DATABASE] Initializing SQLite database ({sqlite_path})...")
+    engine = create_engine(f"sqlite:///{sqlite_path}", connect_args={"check_same_thread": False})
     db_type = "sqlite"
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
