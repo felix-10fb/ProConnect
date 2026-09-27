@@ -47,17 +47,18 @@ function showToast(title, message, type = 'info') {
   }, 4000);
 }
 
-// ==================== SPLASH SCREEN ====================
+// ==================== SPLASH SCREEN & AUTH ====================
 function initSplashScreen() {
   const splash = document.getElementById('splash-screen');
   if (!splash) return;
 
-  // If user is already saved, skip splash
   const savedUserId = localStorage.getItem('procom_active_user_id');
   if (savedUserId) {
     splash.classList.add('hidden');
     setTimeout(() => splash.style.display = 'none', 600);
-    return;
+  } else {
+    splash.style.display = 'flex';
+    splash.classList.remove('hidden');
   }
 
   // Splash login button
@@ -69,13 +70,7 @@ function initSplashScreen() {
       if (!val) return;
       try {
         const user = await window.API.login(val);
-        window.appState.currentUser = user;
-        updateUserUI();
-        localStorage.setItem('procom_active_user_id', user.id);
-        window.realtime.connect(user.id);
-        splash.classList.add('hidden');
-        setTimeout(() => splash.style.display = 'none', 600);
-        showToast('Welcome back!', `Connected as ${user.full_name} (#${user.id})`, 'success');
+        await completeUserLogin(user);
       } catch (err) {
         showToast('Login Failed', err.message, 'error');
       }
@@ -90,13 +85,7 @@ function initSplashScreen() {
       const uid = parseInt(btn.getAttribute('data-uid'));
       try {
         const user = await window.API.login(uid);
-        window.appState.currentUser = user;
-        updateUserUI();
-        localStorage.setItem('procom_active_user_id', user.id);
-        window.realtime.connect(user.id);
-        splash.classList.add('hidden');
-        setTimeout(() => splash.style.display = 'none', 600);
-        showToast('Welcome!', `Connected as ${user.full_name}`, 'success');
+        await completeUserLogin(user);
       } catch (err) {
         showToast('Connection Error', err.message, 'error');
       }
@@ -119,12 +108,7 @@ function initSplashScreen() {
           department: 'Engineering',
           organization: 'ProCom'
         });
-        window.appState.currentUser = user;
-        updateUserUI();
-        localStorage.setItem('procom_active_user_id', user.id);
-        window.realtime.connect(user.id);
-        splash.classList.add('hidden');
-        setTimeout(() => splash.style.display = 'none', 600);
+        await completeUserLogin(user);
         showToast('Account Created!', `Welcome to ProCom, ${user.full_name}! Your ID is #${user.id}`, 'success');
       } catch (err) {
         showToast('Registration Failed', err.message, 'error');
@@ -132,6 +116,46 @@ function initSplashScreen() {
     };
   }
 }
+
+async function completeUserLogin(user) {
+  window.appState.currentUser = user;
+  localStorage.setItem('procom_active_user_id', user.id);
+  updateUserUI();
+
+  // Hide splash screen
+  const splash = document.getElementById('splash-screen');
+  if (splash) {
+    splash.classList.add('hidden');
+    setTimeout(() => splash.style.display = 'none', 600);
+  }
+
+  // Connect realtime & load user content
+  window.realtime.connect(user.id);
+  await loadConversations();
+  if (window.appState.conversations.length > 0) {
+    selectConversation(window.appState.conversations[0]);
+  }
+  showToast('Welcome to ProCom!', `Connected as ${user.full_name} (#${user.id})`, 'success');
+}
+
+function showLoginSplash() {
+  const splash = document.getElementById('splash-screen');
+  if (splash) {
+    splash.style.display = 'flex';
+    splash.classList.remove('hidden');
+  }
+}
+
+function logoutUser() {
+  localStorage.removeItem('procom_active_user_id');
+  window.appState.currentUser = null;
+  if (window.realtime && window.realtime.ws) {
+    try { window.realtime.ws.close(); } catch(e){}
+  }
+  showLoginSplash();
+  showToast('Logged Out', 'Returned to ProCom login screen', 'info');
+}
+
 
 // ==================== THEME ENGINE ====================
 function initTheme() {
@@ -211,37 +235,33 @@ async function initApp() {
     // Check saved user in localStorage
     const savedUserId = localStorage.getItem('procom_active_user_id');
     if (savedUserId) {
-      window.appState.currentUser = users.find(u => u.id === parseInt(savedUserId)) || users[0];
-    } else {
-      window.appState.currentUser = users.find(u => u.id === 1) || users[0];
+      window.appState.currentUser = users.find(u => u.id === parseInt(savedUserId));
     }
 
-    updateUserUI();
+    if (window.appState.currentUser) {
+      updateUserUI();
+      window.realtime.connect(window.appState.currentUser.id);
+      await loadConversations();
+      if (window.appState.conversations.length > 0) {
+        selectConversation(window.appState.conversations[0]);
+      }
+    } else {
+      showLoginSplash();
+    }
   } catch (err) {
     console.error('Failed to load users:', err);
+    showLoginSplash();
   }
 
-  // 3. Connect Realtime WebSocket
-  if (window.appState.currentUser) {
-    window.realtime.connect(window.appState.currentUser.id);
-  }
-
-  // 4. Initialize Engines
+  // 3. Initialize Engines
   window.callingEngine.init();
   await window.calendarManager.init();
   await window.remindersManager.init();
 
-  // 5. Load Conversations
-  await loadConversations();
-
-  // 6. Bind Global UI Events
+  // 4. Bind Global UI Events
   bindGlobalEvents();
-
-  // 7. Select initial conversation
-  if (window.appState.conversations.length > 0) {
-    selectConversation(window.appState.conversations[0]);
-  }
 }
+
 
 async function refreshDatabaseStatus() {
   try {
@@ -611,11 +631,10 @@ function bindGlobalEvents() {
     };
   }
 
-  // User Profile Badge -> opens Login & Switch Account Modal
+  // User Profile Badge -> opens Login Splash Screen to Switch Account / Log Out
   const userProfileBadge = document.getElementById('user-profile-badge');
-  const loginModal = document.getElementById('login-modal');
-  if (userProfileBadge && loginModal) {
-    userProfileBadge.onclick = () => loginModal.classList.add('active');
+  if (userProfileBadge) {
+    userProfileBadge.onclick = () => showLoginSplash();
   }
 
   // Login Form Submission
