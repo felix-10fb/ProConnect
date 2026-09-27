@@ -91,9 +91,19 @@ const API = {
     return this.request(`/api/users/${userId}`);
   },
 
-  // Conversations & Channels
-  getConversations() {
-    return this.request('/api/conversations');
+  // Conversations & Channels (Private User Scope)
+  getConversations(userId = null) {
+    const uid = userId || (window.appState && window.appState.currentUser ? window.appState.currentUser.id : null);
+    let url = '/api/conversations';
+    if (uid) url += `?user_id=${uid}`;
+    return this.request(url);
+  },
+  getOrCreateDirectConversation(targetUserId) {
+    const currentUserId = window.appState && window.appState.currentUser ? window.appState.currentUser.id : 1;
+    return this.request('/api/conversations/direct', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: currentUserId, target_id: targetUserId })
+    });
   },
   createConversation(data) {
     return this.request('/api/conversations', {
@@ -108,10 +118,14 @@ const API = {
     });
   },
 
-  // Messages
-  getMessages(convId, channelId = null) {
+  // Messages (Privacy Protected)
+  getMessages(convId, channelId = null, userId = null) {
+    const uid = userId || (window.appState && window.appState.currentUser ? window.appState.currentUser.id : null);
+    const params = [];
+    if (channelId) params.push(`channel_id=${channelId}`);
+    if (uid) params.push(`user_id=${uid}`);
     let url = `/api/conversations/${convId}/messages`;
-    if (channelId) url += `?channel_id=${channelId}`;
+    if (params.length) url += `?${params.join('&')}`;
     return this.request(url);
   },
   sendMessage(data) {

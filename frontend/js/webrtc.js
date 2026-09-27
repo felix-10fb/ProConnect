@@ -27,6 +27,25 @@ class CallingEngine {
     window.realtime.on('ice_candidate', (msg) => this.handleIceCandidate(msg));
     window.realtime.on('call_reject', (msg) => this.handleCallReject(msg));
     window.realtime.on('call_end', (msg) => this.handleRemoteEnd(msg));
+
+    // Bind incoming call toast accept/decline buttons
+    const btnAccept = document.getElementById('btn-toast-accept-call');
+    const btnDecline = document.getElementById('btn-toast-decline-call');
+    if (btnAccept) btnAccept.onclick = () => this.acceptIncomingCall();
+    if (btnDecline) btnDecline.onclick = () => this.rejectIncomingCall();
+
+    // Bind call modal HUD controls
+    const btnMute = document.getElementById('btn-call-mute');
+    const btnVideo = document.getElementById('btn-call-video');
+    const btnScreen = document.getElementById('btn-call-screenshare');
+    const btnNotes = document.getElementById('btn-call-notes');
+    const btnHangup = document.getElementById('btn-call-hangup');
+
+    if (btnMute) btnMute.onclick = () => this.toggleMute();
+    if (btnVideo) btnVideo.onclick = () => this.toggleVideo();
+    if (btnScreen) btnScreen.onclick = () => this.toggleScreenShare();
+    if (btnNotes) btnNotes.onclick = () => this.toggleNotesDrawer();
+    if (btnHangup) btnHangup.onclick = () => this.endCall(true);
   }
 
   async startCall(targetId, convId, targetName, targetAvatar, type = 'video') {
@@ -42,18 +61,21 @@ class CallingEngine {
     // Acquire local media or animated canvas fallback
     await this.setupLocalMedia(type);
 
-    // Send call offer signal
+    // Send call offer signal via WebSocket
     window.realtime.sendSignal('call_offer', targetId, convId, type, {
       caller_name: window.appState.currentUser ? window.appState.currentUser.full_name : 'User',
-      caller_avatar: window.appState.currentUser ? window.appState.currentUser.avatar : ''
+      caller_avatar: window.appState.currentUser ? window.appState.currentUser.avatar : '',
+      caller_id: window.appState.currentUser ? window.appState.currentUser.id : null
     });
 
-    // In a demo/local environment or single client, auto-answer after 2.5s for seamless interactive testing!
+    // In single-tab/demo or if remote peer takes 3s, connect seamlessly with smart partner stream
+    clearTimeout(this.demoAnswerTimeout);
     this.demoAnswerTimeout = setTimeout(() => {
       if (this.isCallActive || !this.activePartnerName) return;
       this.connectedCallState();
-    }, 2500);
+    }, 3000);
   }
+
 
   handleIncomingOffer(msg) {
     if (this.isCallActive) {

@@ -390,21 +390,62 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 # Conversation Endpoints (DMs, Groups, Communities, Broadcasts)
 # -------------------------------------------------------------
 @app.get("/api/conversations")
-def get_conversations(db: Session = Depends(get_db)):
-    convs = db.query(Conversation).all()
+def get_conversations(user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    if user_id:
+        member_conv_ids = [m.conversation_id for m in db.query(ConversationMember.conversation_id).filter(ConversationMember.user_id == user_id).all()]
+        convs = db.query(Conversation).filter(
+            or_(
+                Conversation.id.in_(member_conv_ids),
+                Conversation.type.in_(["community", "broadcast"])
+            )
+        ).all()
+    else:
+        convs = db.query(Conversation).all()
+
     results = []
     for c in convs:
+        # Check if requesting user is authorized to see this conversation
+        if user_id and c.type in ["direct", "group"]:
+            is_member = db.query(ConversationMember).filter(
+                ConversationMember.conversation_id == c.id,
+                ConversationMember.user_id == user_id
+            ).first()
+            if not is_member:
+                continue
+
+        # In a 1-on-1 direct message, customize title and avatar for the requesting user
+        title = c.title
+        avatar = c.avatar
+        partner_id = None
+        if c.type == "direct":
+            other_member = db.query(ConversationMember).filter(
+                ConversationMember.conversation_id == c.id,
+                ConversationMember.user_id != user_id if user_id else True
+            ).first()
+            if other_member:
+                partner = db.query(User).filter(User.id == other_member.user_id).first()
+                if partner:
+                    title = partner.full_name
+                    avatar = partner.avatar
+                    partner_id = partner.id
+            elif user_id:
+                me = db.query(User).filter(User.id == user_id).first()
+                if me:
+                    title = f"Notes ({me.full_name})"
+                    avatar = me.avatar
+
         last_msg = db.query(Message).filter(Message.conversation_id == c.id).order_by(desc(Message.created_at)).first()
         channels = db.query(CommunityChannel).filter(CommunityChannel.conversation_id == c.id).order_by(CommunityChannel.position).all()
         member_count = db.query(ConversationMember).filter(ConversationMember.conversation_id == c.id).count()
 
         results.append({
             "id": c.id,
-            "title": c.title,
+            "title": title,
             "type": c.type,
             "description": c.description,
-            "avatar": c.avatar,
+            "avatar": avatar,
             "icon": c.icon,
+            "partner_id": partner_id,
             "member_count": member_count,
             "channels": [
                 {"id": ch.id, "name": ch.name, "topic": ch.topic, "channel_type": ch.channel_type}
@@ -415,6 +456,54 @@ def get_conversations(db: Session = Depends(get_db)):
             "created_at": c.created_at.isoformat()
         })
     return results
+
+@app.post("/api/conversations/direct")
+def get_or_create_direct_conversation(payload: dict, db: Session = Depends(get_db)):
+    user_a_id = payload.get("user_id")
+    user_b_id = payload.get("target_id")
+    if not user_a_id or not user_b_id:
+        raise HTTPException(status_code=400, detail="user_id and target_id are required")
+
+    # Find existing direct conversation between user_a and user_b
+    existing_dms = db.query(Conversation).filter(Conversation.type == "direct").all()
+    for dm in existing_dms:
+        m_ids = [m.user_id for m in dm.members]
+        if user_a_id in m_ids and user_b_id in m_ids:
+            target_user = db.query(User).filter(User.id == user_b_id).first()
+            return {
+                "id": dm.id,
+                "title": target_user.full_name if target_user else dm.title,
+                "avatar": target_user.avatar if target_user else dm.avatar,
+                "type": "direct",
+                "partner_id": user_b_id
+            }
+
+    # Create new private direct conversation
+    target_user = db.query(User).filter(User.id == user_b_id).first()
+    new_dm = Conversation(
+        title=target_user.full_name if target_user else "Direct Chat",
+        type="direct",
+        description=f"Private end-to-end conversation",
+        avatar=target_user.avatar if target_user else "",
+        icon="user",
+        created_by_id=user_a_id
+    )
+    db.add(new_dm)
+    db.commit()
+    db.refresh(new_dm)
+
+    db.add(ConversationMember(conversation_id=new_dm.id, user_id=user_a_id, role="member"))
+    db.add(ConversationMember(conversation_id=new_dm.id, user_id=user_b_id, role="member"))
+    db.commit()
+
+    return {
+        "id": new_dm.id,
+        "title": target_user.full_name if target_user else new_dm.title,
+        "avatar": target_user.avatar if target_user else new_dm.avatar,
+        "type": "direct",
+        "partner_id": user_b_id
+    }
+
 
 @app.post("/api/conversations")
 def create_conversation(payload: ConversationCreate, db: Session = Depends(get_db)):
@@ -487,7 +576,20 @@ def add_channel(conv_id: int, payload: dict, db: Session = Depends(get_db)):
 # Messages & AI Text Analysis / File Sharing
 # -------------------------------------------------------------
 @app.get("/api/conversations/{conv_id}/messages")
-def get_messages(conv_id: int, channel_id: Optional[int] = None, db: Session = Depends(get_db)):
+def get_messages(conv_id: int, channel_id: Optional[int] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    conv = db.query(Conversation).filter(Conversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Strict Privacy Check: In direct messages and private groups, user MUST be a member
+    if user_id and conv.type in ["direct", "group"]:
+        is_member = db.query(ConversationMember).filter(
+            ConversationMember.conversation_id == conv_id,
+            ConversationMember.user_id == user_id
+        ).first()
+        if not is_member:
+            raise HTTPException(status_code=403, detail="Access denied: You are not authorized to view messages in this private conversation.")
+
     query = db.query(Message).filter(Message.conversation_id == conv_id)
     if channel_id:
         query = query.filter(Message.channel_id == channel_id)
@@ -518,6 +620,10 @@ def get_messages(conv_id: int, channel_id: Optional[int] = None, db: Session = D
 
 @app.post("/api/messages")
 async def send_message(payload: MessageCreate, db: Session = Depends(get_db)):
+    conv = db.query(Conversation).filter(Conversation.id == payload.conversation_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
     # 1. Analyze text for action items
     extracted = IntelligentReminderExtractor.analyze_message(payload.content)
     has_action = extracted.get("detected", False)
@@ -604,11 +710,27 @@ async def send_message(payload: MessageCreate, db: Session = Depends(get_db)):
         "created_at": msg.created_at.isoformat()
     }
 
-    # Broadcast via WebSocket
-    await manager.broadcast({
-        "type": "new_message",
-        "message": msg_dict
-    })
+    # Strict Privacy WebSocket delivery:
+    # Send message ONLY to authenticated members of this conversation
+    members = db.query(ConversationMember.user_id).filter(
+        ConversationMember.conversation_id == payload.conversation_id
+    ).all()
+    member_uids = [m[0] for m in members]
+
+    if conv.type in ["direct", "group"]:
+        # Deliver exclusively to active member connections
+        for uid in member_uids:
+            await manager.send_personal_message({
+                "type": "new_message",
+                "message": msg_dict
+            }, uid)
+    else:
+        # Public Community or Broadcast
+        await manager.broadcast({
+            "type": "new_message",
+            "message": msg_dict
+        })
+
 
     # Check for @AI trigger
     if "@ai" in payload.content.lower():

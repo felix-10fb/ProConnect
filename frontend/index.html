@@ -362,9 +362,41 @@
               </div>
             </div>
           </div>
+        <!-- 4. CALLS & VIDEO MEETINGS VIEW -->
+        <div class="calls-view" id="calls-view">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Calls & Direct Audio/Video</h2>
+              <p>Secure peer-to-peer encrypted calling, screen sharing, and real-time AI meeting notes</p>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:20px; width:100%; height:calc(100% - 70px);">
+            <!-- Members Quick Dial Grid -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-glass); border-radius:var(--radius-xl); padding:20px; display:flex; flex-direction:column; overflow:hidden;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="font-size:1.05rem; font-weight:700;">📞 ProCom Members Directory</h3>
+                <span class="conv-type-tag community">Encrypted WebRTC</span>
+              </div>
+              <div id="calls-members-list" style="display:flex; flex-direction:column; gap:12px; overflow-y:auto; flex:1; padding-right:6px;">
+                <!-- Populated dynamically with call buttons -->
+              </div>
+            </div>
+
+            <!-- Call History & Stage Info -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-glass); border-radius:var(--radius-xl); padding:20px; display:flex; flex-direction:column; overflow:hidden;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="font-size:1.05rem; font-weight:700;">📜 Recent Call History</h3>
+                <span style="font-size:0.75rem; color:var(--text-muted);">Auto-logged</span>
+              </div>
+              <div id="calls-history-list" style="display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1; padding-right:6px;">
+                <!-- Populated dynamically from /api/calls/history -->
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 4. SETTINGS & APPEARANCE VIEW -->
+        <!-- 5. SETTINGS & APPEARANCE VIEW -->
         <div class="settings-view" id="settings-view">
           <div class="view-header">
             <div class="view-title-group">

@@ -1564,14 +1564,15 @@ input:checked + .slider:before { transform: translateX(16px); }
 /* ==========================================================================
    CALENDAR & MEETINGS VIEW
    ========================================================================== */
-.calendar-view, .reminders-view {
+.calendar-view, .reminders-view, .calls-view {
   flex: 1;
   display: none;
   flex-direction: column;
   padding: 24px 32px;
   overflow-y: auto;
 }
-.calendar-view.active, .reminders-view.active { display: flex; }
+.calendar-view.active, .reminders-view.active, .calls-view.active { display: flex; }
+
 
 .view-header {
   display: flex;

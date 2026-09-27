@@ -3,12 +3,51 @@ from sqlalchemy.orm import Session
 from backend.models import User, Conversation, ConversationMember, CommunityChannel, Message, Reminder, Meeting
 import json
 
+def ensure_private_dm_coverage(db: Session):
+    # Ensure every demo user (1, 2, 3, 4) has direct messaging channels with appropriate partners
+    pairs = [(1, 2), (1, 3), (2, 4), (3, 4)]
+    for u1, u2 in pairs:
+        existing = False
+        all_dms = db.query(Conversation).filter(Conversation.type == "direct").all()
+        for dm in all_dms:
+            m_ids = [m.user_id for m in dm.members]
+            if u1 in m_ids and u2 in m_ids:
+                existing = True
+                break
+        if not existing:
+            user1 = db.query(User).filter(User.id == u1).first()
+            user2 = db.query(User).filter(User.id == u2).first()
+            if user1 and user2:
+                new_dm = Conversation(
+                    title=f"Direct: {user1.full_name} & {user2.full_name}",
+                    type="direct",
+                    description=f"Private conversation between {user1.full_name} and {user2.full_name}",
+                    avatar=user2.avatar,
+                    icon="user",
+                    created_by_id=u1
+                )
+                db.add(new_dm)
+                db.commit()
+                db.refresh(new_dm)
+                db.add(ConversationMember(conversation_id=new_dm.id, user_id=u1, role="member"))
+                db.add(ConversationMember(conversation_id=new_dm.id, user_id=u2, role="member"))
+                # Add private welcome message
+                db.add(Message(
+                    conversation_id=new_dm.id,
+                    sender_id=u1,
+                    content=f"Hi {user2.full_name.split()[0]}! This is our private end-to-end conversation on ProCom.",
+                    message_type="text"
+                ))
+                db.commit()
+
 def seed_database(db: Session):
-    # Check if database is already seeded
+    # Ensure private DMs exist regardless
     if db.query(User).first():
+        ensure_private_dm_coverage(db)
         return
 
     print("[SEED] Seeding initial users, communities, groups, broadcasts, reminders, and meetings...")
+
 
     now = datetime.datetime.now()
 

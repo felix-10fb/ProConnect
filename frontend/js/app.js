@@ -290,13 +290,15 @@ function updateUserUI() {
 
 async function loadConversations() {
   try {
-    const convs = await window.API.getConversations();
+    const uid = window.appState.currentUser ? window.appState.currentUser.id : null;
+    const convs = await window.API.getConversations(uid);
     window.appState.conversations = convs;
     renderConversationList();
   } catch (err) {
     console.error('Failed to load conversations:', err);
   }
 }
+
 
 function renderConversationList() {
   const listEl = document.getElementById('conversation-list-container');
@@ -427,15 +429,18 @@ async function loadAndRenderMessages(convId, channelId = null) {
   if (!stream) return;
 
   try {
-    const msgs = await window.API.getMessages(convId, channelId);
+    const uid = window.appState.currentUser ? window.appState.currentUser.id : null;
+    const msgs = await window.API.getMessages(convId, channelId, uid);
     stream.innerHTML = '';
 
     msgs.forEach(m => appendMessageToStream(m));
     stream.scrollTop = stream.scrollHeight;
   } catch (err) {
     console.error('Failed to load messages:', err);
+    stream.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:0.9rem;">🔒 <strong>Private Space</strong><br>You are not a member of this private conversation.</div>';
   }
 }
+
 
 function appendMessageToStream(m) {
   const stream = document.getElementById('messages-stream');
@@ -833,17 +838,34 @@ function bindGlobalEvents() {
   if (btnVideoCall) {
     btnVideoCall.onclick = () => {
       const conv = window.appState.activeConversation;
-      if (!conv) return;
-      window.callingEngine.startCall(2, conv.id, conv.title, conv.avatar, 'video');
+      if (!conv) {
+        showToast('No Active Chat', 'Select a conversation or member first', 'warn');
+        return;
+      }
+      const myId = window.appState.currentUser ? window.appState.currentUser.id : 1;
+      let targetId = conv.partner_id;
+      if (!targetId) {
+        targetId = myId === 1 ? 2 : 1;
+      }
+      window.callingEngine.startCall(targetId, conv.id, conv.title, conv.avatar, 'video');
     };
   }
   if (btnAudioCall) {
     btnAudioCall.onclick = () => {
       const conv = window.appState.activeConversation;
-      if (!conv) return;
-      window.callingEngine.startCall(2, conv.id, conv.title, conv.avatar, 'audio');
+      if (!conv) {
+        showToast('No Active Chat', 'Select a conversation or member first', 'warn');
+        return;
+      }
+      const myId = window.appState.currentUser ? window.appState.currentUser.id : 1;
+      let targetId = conv.partner_id;
+      if (!targetId) {
+        targetId = myId === 1 ? 2 : 1;
+      }
+      window.callingEngine.startCall(targetId, conv.id, conv.title, conv.avatar, 'audio');
     };
   }
+
 
   // Call HUD Controls
   const btnMute = document.getElementById('btn-call-mute');
@@ -1135,6 +1157,7 @@ function switchTab(tab) {
   const chatView = document.getElementById('chat-view-container');
   const calendarView = document.getElementById('calendar-view');
   const remindersView = document.getElementById('reminders-view');
+  const callsView = document.getElementById('calls-view');
   const settingsView = document.getElementById('settings-view');
   const secondarySidebar = document.getElementById('secondary-sidebar');
 
@@ -1142,6 +1165,7 @@ function switchTab(tab) {
   if (chatView) chatView.style.display = 'none';
   if (calendarView) calendarView.classList.remove('active');
   if (remindersView) remindersView.classList.remove('active');
+  if (callsView) callsView.classList.remove('active');
   if (settingsView) settingsView.classList.remove('active');
   if (secondarySidebar) secondarySidebar.style.display = 'none';
 
@@ -1160,15 +1184,83 @@ function switchTab(tab) {
       window.remindersManager.renderReminders();
     });
   } else if (tab === 'calls') {
-    const conv = window.appState.activeConversation || window.appState.conversations[0];
-    if (conv) {
-      window.callingEngine.startCall(2, conv.id, conv.title, conv.avatar, 'video');
-    }
+    if (callsView) callsView.classList.add('active');
+    renderCallsView();
   } else if (tab === 'settings') {
     if (settingsView) settingsView.classList.add('active');
     updateSettingsView();
   }
 }
+
+async function renderCallsView() {
+  const membersContainer = document.getElementById('calls-members-list');
+  const historyContainer = document.getElementById('calls-history-list');
+  const currentUserId = window.appState.currentUser ? window.appState.currentUser.id : 1;
+
+  if (membersContainer) {
+    membersContainer.innerHTML = '';
+    const otherUsers = (window.appState.users || []).filter(u => u.id !== currentUserId && !u.is_bot);
+    otherUsers.forEach(u => {
+      const card = document.createElement('div');
+      card.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg-surface-elevated); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);';
+      card.innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="${u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}" style="width:40px; height:40px; border-radius:var(--radius-md); object-fit:cover;" alt="${u.full_name}">
+          <div>
+            <div style="font-weight:700; font-size:0.9rem; color:var(--text-main);">${u.full_name} <span style="font-size:0.75rem; color:var(--primary); font-weight:600;">#${u.id}</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${u.department || 'ProCom'} • <span style="color:#10b981;">Online</span></div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-primary btn-call-user" data-uid="${u.id}" data-uname="${u.full_name}" data-uavatar="${u.avatar || ''}" data-type="video" style="padding:6px 12px; font-size:0.78rem;" title="Start HD Video Call">
+            📹 Video Call
+          </button>
+          <button class="btn-secondary btn-call-user" data-uid="${u.id}" data-uname="${u.full_name}" data-uavatar="${u.avatar || ''}" data-type="audio" style="padding:6px 12px; font-size:0.78rem;" title="Start Voice Call">
+            📞 Voice
+          </button>
+        </div>
+      `;
+      membersContainer.appendChild(card);
+    });
+
+    membersContainer.querySelectorAll('.btn-call-user').forEach(btn => {
+      btn.onclick = () => {
+        const uid = parseInt(btn.getAttribute('data-uid'));
+        const uname = btn.getAttribute('data-uname');
+        const uavatar = btn.getAttribute('data-uavatar');
+        const callType = btn.getAttribute('data-type');
+        window.callingEngine.startCall(uid, null, uname, uavatar, callType);
+      };
+    });
+  }
+
+  if (historyContainer) {
+    try {
+      const logs = await window.API.request('/api/calls/history');
+      historyContainer.innerHTML = '';
+      if (!logs || logs.length === 0) {
+        historyContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem; text-align:center; padding:20px;">No calls logged yet. Start a call!</div>';
+      } else {
+        logs.slice(0, 8).forEach(l => {
+          const item = document.createElement('div');
+          item.style.cssText = 'padding:10px 12px; background:rgba(0,0,0,0.15); border:1px solid var(--border-subtle); border-radius:var(--radius-md); font-size:0.78rem; display:flex; justify-content:space-between; align-items:center;';
+          const icon = l.call_type === 'video' ? '📹' : '📞';
+          item.innerHTML = `
+            <div>
+              <div style="font-weight:700;">${icon} ${l.caller_name} ➔ ${l.receiver_name}</div>
+              <div style="color:var(--text-muted); font-size:0.72rem;">${new Date(l.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })} • Duration: ${l.duration_seconds}s</div>
+            </div>
+            <span style="font-size:0.7rem; padding:2px 8px; border-radius:10px; background:rgba(16,185,129,0.15); color:#10b981; font-weight:700;">${l.status}</span>
+          `;
+          historyContainer.appendChild(item);
+        });
+      }
+    } catch (e) {
+      historyContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">Ready for calling</div>';
+    }
+  }
+}
+
 
 // ==================== SETTINGS VIEW LOGIC ====================
 function updateSettingsView() {
